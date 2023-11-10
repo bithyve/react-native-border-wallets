@@ -66,7 +66,6 @@ const styles = StyleSheet.create({
     padding: 5,
     width: cellWidth,
     height: cellHeight,
-    backgroundColor: '#69A2B0',
     margin: 1,
     borderRadius: 4,
     justifyContent: 'center',
@@ -89,14 +88,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  ceilText: {
+  cellText: {
     color: '#BEBBBB',
   },
 });
 
 const rows = Array.from(Array(128).keys());
 
-export const Ceil = ({ onPress, text, index, selected }) => {
+export const Cell = ({ onPress, text, index, selected, accentColor }) => {
   const isSelected = selected.includes(index);
   const sequence = isSelected ? selected.findIndex((i) => i === index) + 1 : -1;
   return (
@@ -105,7 +104,7 @@ export const Ceil = ({ onPress, text, index, selected }) => {
       onPress={() => onPress(index)}
       style={
         isSelected
-          ? styles.cellSelected
+          ? [styles.cellSelected, { backgroundColor: accentColor }]
           : [
               styles.cell,
               {
@@ -130,9 +129,24 @@ export const Ceil = ({ onPress, text, index, selected }) => {
   );
 };
 
-const BorderWalletGrid = () => {
-  const mnemonic = '';
-  const gridType = useState(GridType.WORDS);
+interface Props {
+  gridType: GridType;
+  mnemonic: string;
+  accentColor: string;
+  onCellSelected: (index: number, selectedCells: number[]) => void;
+  onGridLoaded: (grid: string[]) => void;
+}
+
+const defaultProps: Props = {
+  gridType: GridType.WORDS,
+  mnemonic: '',
+  accentColor: '#69A2B0',
+  onCellSelected: () => {},
+  onGridLoaded: () => {},
+};
+
+const BorderWalletGrid = (props: Props) => {
+  const gridType = props.gridType || GridType.WORDS;
   const [grid, setGrid] = useState([]);
   const [selected, setSelected] = useState([]);
   const columnHeaderRef = useRef();
@@ -152,7 +166,7 @@ const BorderWalletGrid = () => {
 
   const generateGrid = () => {
     const words = [...wordlists];
-    shuffle(words, mnemonic);
+    shuffle(words, props.mnemonic);
     const cells = words.map((word) => {
       switch (gridType) {
         case GridType.WORDS:
@@ -167,116 +181,161 @@ const BorderWalletGrid = () => {
           return ' ';
       }
     });
-    const g = [];
+    const _grid = [];
     Array.from(
       {
         length: 128,
       },
       (_, rowIndex) => {
-        g.push(cells.slice(rowIndex * 16, (rowIndex + 1) * 16));
+        _grid.push(cells.slice(rowIndex * 16, (rowIndex + 1) * 16));
       }
     );
-    setGrid(g);
+    setGrid(_grid);
+    props.onGridLoaded(_grid);
     setLoading(false);
+  };
+
+  const onCellPress = (index) => {
+    const isSelected = selected.includes(index);
+    if (isSelected) {
+      const i = selected.findIndex((i) => i === index);
+      selected.splice(i, 1);
+      setSelected([...selected]);
+      props.onCellSelected(index, selected);
+    } else if (selected.length < 23) {
+      selected.push(index);
+      setSelected([...selected]);
+      props.onCellSelected(index, selected);
+    }
   };
 
   return loading ? (
     <ActivityIndicator
       size="large"
+      color={props.accentColor}
       style={{
-        height: '80%',
+        height: '90%',
       }}
     />
   ) : (
-    <View
-      style={{
-        flex: 1,
-        marginHorizontal: 2,
-        flexDirection: 'row',
-      }}
-    >
-      <View>
-        <FlatList
-          data={rows}
-          ref={rowHeaderRef}
-          contentContainerStyle={{
-            paddingBottom: 100 + 36,
+    <View style={styles.viewContainer}>
+      {!loading && (
+        <View
+          style={{
+            marginLeft: cellWidth + 4,
           }}
-          overScrollMode="never"
-          bounces={false}
-          scrollEnabled={false}
-          showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <View style={styles.cell}>
-              <Text style={styles.ceilText}>
-                {('000' + (item + 1)).substr(-3)}
-              </Text>
-            </View>
-          )}
-          // keyExtractor={( item ) => item.toString()}
-        />
-      </View>
-
+        >
+          <FlatList
+            data={columns}
+            ref={columnHeaderRef}
+            horizontal
+            overScrollMode="never"
+            bounces={false}
+            snapToInterval={cellWidth + 2}
+            snapToAlignment="start"
+            scrollEnabled={false}
+            showsHorizontalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <View style={styles.cell}>
+                <Text style={styles.cellText}>{item}</Text>
+              </View>
+            )}
+            // keyExtractor={( item ) => item}
+          />
+        </View>
+      )}
       <View
         style={{
           flex: 1,
+          marginHorizontal: 2,
+          flexDirection: 'row',
         }}
       >
-        <ScrollView
-          horizontal
-          overScrollMode="never"
-          bounces={false}
-          showsHorizontalScrollIndicator={false}
-          scrollEventThrottle={10}
-          snapToInterval={cellWidth + 2}
-          snapToAlignment="start"
-          onScroll={(e) => {
-            columnHeaderRef.current?.scrollToIndex({
-              index: e.nativeEvent.contentOffset.x / (cellWidth + 2),
-              animated: false,
-            });
+        <View>
+          <FlatList
+            data={rows}
+            ref={rowHeaderRef}
+            contentContainerStyle={{
+              paddingBottom: 100 + 36,
+            }}
+            overScrollMode="never"
+            bounces={false}
+            scrollEnabled={false}
+            showsVerticalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <View style={styles.cell}>
+                <Text style={styles.cellText}>
+                  {('000' + (item + 1)).substr(-3)}
+                </Text>
+              </View>
+            )}
+            // keyExtractor={( item ) => item.toString()}
+          />
+        </View>
+
+        <View
+          style={{
+            flex: 1,
           }}
         >
           <ScrollView
+            horizontal
             overScrollMode="never"
             bounces={false}
-            contentContainerStyle={{
-              paddingBottom: 100,
-            }}
-            showsVerticalScrollIndicator={false}
+            showsHorizontalScrollIndicator={false}
             scrollEventThrottle={10}
+            snapToInterval={cellWidth + 2}
+            snapToAlignment="start"
             onScroll={(e) => {
-              rowHeaderRef.current?.scrollToIndex({
-                index: e.nativeEvent.contentOffset.y / (cellHeight + 2),
+              columnHeaderRef.current?.scrollToIndex({
+                index: e.nativeEvent.contentOffset.x / (cellWidth + 2),
                 animated: false,
               });
             }}
           >
-            {grid.map((rowData, index) => (
-              <FlatList
-                key={index}
-                data={rowData}
-                horizontal
-                overScrollMode="never"
-                bounces={false}
-                scrollEnabled={false}
-                showsHorizontalScrollIndicator={false}
-                renderItem={({ item, index: i }) => (
-                  <Ceil
-                    onPress={(i) => onCeilPress(i)}
-                    text={item}
-                    index={index * 16 + i}
-                    selected={selected}
-                  />
-                )}
-                // keyExtractor={( item ) => item}
-              />
-            ))}
+            <ScrollView
+              overScrollMode="never"
+              bounces={false}
+              contentContainerStyle={{
+                paddingBottom: 100,
+              }}
+              showsVerticalScrollIndicator={false}
+              scrollEventThrottle={10}
+              onScroll={(e) => {
+                rowHeaderRef.current?.scrollToIndex({
+                  index: e.nativeEvent.contentOffset.y / (cellHeight + 2),
+                  animated: false,
+                });
+              }}
+            >
+              {grid.map((rowData, index) => (
+                <FlatList
+                  key={index}
+                  data={rowData}
+                  horizontal
+                  overScrollMode="never"
+                  bounces={false}
+                  scrollEnabled={false}
+                  showsHorizontalScrollIndicator={false}
+                  renderItem={({ item, index: i }) => (
+                    <Cell
+                      onPress={(i) => onCellPress(i)}
+                      text={item}
+                      index={index * 16 + i}
+                      selected={selected}
+                      accentColor={props.accentColor}
+                    />
+                  )}
+                  // keyExtractor={( item ) => item}
+                />
+              ))}
+            </ScrollView>
           </ScrollView>
-        </ScrollView>
+        </View>
       </View>
     </View>
   );
 };
 
+BorderWalletGrid.defaultProps = defaultProps;
 export default BorderWalletGrid;

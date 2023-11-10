@@ -15,7 +15,7 @@ const rnd11Bit = (limit = 2048) => {
   return small;
 };
 
-export const shuffle = (array, seed) => {
+export const shuffle = (array: any[], seed: string) => {
   const prng = uheprng();
   let getRandom = rnd11Bit;
   if (seed) {
@@ -32,7 +32,7 @@ export const shuffle = (array, seed) => {
 
 export const generateBorderWalletGrid = (
   mnemonic: string,
-  gridType
+  gridType: GridType
 ): string[] => {
   const words = [...wordlists];
   shuffle(words, mnemonic);
