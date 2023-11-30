@@ -1,6 +1,6 @@
 {
   "name": "react-native-border-wallets",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Border wallets library",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",
