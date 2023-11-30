@@ -1,13 +1,15 @@
 import { GridType } from './Interface';
+// @ts-ignore
 import uheprng from './uheprng';
 import { wordList } from './wordlist';
-
+import crypto from 'crypto';
 const wordlists = wordList;
 
 const rnd11Bit = (limit = 2048) => {
   let small = limit;
   while (small >= limit) {
     const big = crypto.getRandomValues(new Uint16Array(1))[0];
+    // @ts-ignore
     const bigString = big.toString(2).padStart(16, '0');
     const smallString = bigString.slice(5);
     small = parseInt(smallString, 2);

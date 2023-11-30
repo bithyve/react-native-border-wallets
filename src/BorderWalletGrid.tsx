@@ -95,7 +95,21 @@ const styles = StyleSheet.create({
 
 const rows = Array.from(Array(128).keys());
 
-export const Cell = ({ onPress, text, index, selected, accentColor }) => {
+interface CellProps {
+  text: string;
+  index: number;
+  selected: number[];
+  accentColor: string;
+  onPress: (index: number) => {};
+}
+
+export const Cell = ({
+  onPress,
+  text,
+  index,
+  selected,
+  accentColor,
+}: CellProps) => {
   const isSelected = selected.includes(index);
   const sequence = isSelected ? selected.findIndex((i) => i === index) + 1 : -1;
   return (
@@ -147,10 +161,10 @@ const defaultProps: Props = {
 
 const BorderWalletGrid = (props: Props) => {
   const gridType = props.gridType || GridType.WORDS;
-  const [grid, setGrid] = useState([]);
-  const [selected, setSelected] = useState([]);
-  const columnHeaderRef = useRef();
-  const rowHeaderRef = useRef();
+  const [grid, setGrid] = useState<string[][]>([]);
+  const [selected, setSelected] = useState<number[]>([]);
+  const columnHeaderRef = useRef<FlatList>(null);
+  const rowHeaderRef = useRef<FlatList>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -181,21 +195,20 @@ const BorderWalletGrid = (props: Props) => {
           return ' ';
       }
     });
-    const _grid = [];
+    const _grid: string[][] = [];
     Array.from(
       {
         length: 128,
       },
-      (_, rowIndex) => {
-        _grid.push(cells.slice(rowIndex * 16, (rowIndex + 1) * 16));
-      }
+      (_, rowIndex) =>
+        _grid.push(cells.slice(rowIndex * 16, (rowIndex + 1) * 16))
     );
     setGrid(_grid);
-    props.onGridLoaded(_grid);
+    props.onGridLoaded(words);
     setLoading(false);
   };
 
-  const onCellPress = (index) => {
+  const onCellPress = (index: number) => {
     const isSelected = selected.includes(index);
     if (isSelected) {
       const i = selected.findIndex((i) => i === index);
@@ -319,7 +332,7 @@ const BorderWalletGrid = (props: Props) => {
                   showsHorizontalScrollIndicator={false}
                   renderItem={({ item, index: i }) => (
                     <Cell
-                      onPress={(i) => onCellPress(i)}
+                      onPress={async (i) => onCellPress(i)}
                       text={item}
                       index={index * 16 + i}
                       selected={selected}
